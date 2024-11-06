@@ -1,0 +1,14 @@
+{
+    "learning_rate": 0.0001,
+    "model": "PMDGGM(\n  (attention): GATConv(360, 8, heads=32)\n  (conv1): GatedGraphConv(\n    (linear_homo): Linear(in_features=256, out_features=128, bias=True)\n    (linear_hete): Linear(in_features=256, out_features=128, bias=True)\n    (bilinear_pool): Bilinear(in1_features=128, in2_features=128, out_features=128, bias=True)\n  )\n  (lin): Linear(in_features=128, out_features=1, bias=True)\n  (lin_edge): Linear(in_features=256, out_features=1, bias=True)\n)",
+    "epochs": 1,
+    "run_time": "668.564",
+    "fold1": "Accuracy: 0.51023, Precision: 0.50794, Recall: 0.65409, F1: 0.57183, ROCAUC: 0.55852, PRAUC: 0.57784",
+    "fold2": "Accuracy: 0.52653, Precision: 0.51370, Recall: 0.99488, F1: 0.67755, ROCAUC: 0.53032, PRAUC: 0.53298",
+    "fold3": "Accuracy: 0.53676, Precision: 0.51925, Recall: 0.99169, F1: 0.68161, ROCAUC: 0.72131, PRAUC: 0.68209",
+    "fold4": "Accuracy: 0.50096, Precision: 0.50048, Recall: 1.00000, F1: 0.66709, ROCAUC: 0.55188, PRAUC: 0.53474",
+    "fold5": "Accuracy: 0.66688, Precision: 0.60108, Recall: 0.99233, F1: 0.74867, ROCAUC: 0.81954, PRAUC: 0.74074",
+    "_avg_": "Accuracy: 0.54827, Precision: 0.52849, Recall: 0.92660, F1: 0.66935, ROCAUC: 0.63631, PRAUC: 0.61368",
+    "random_state": 41,
+    "k": 3
+}
