@@ -1,0 +1,14 @@
+{
+    "learning_rate": 0.0001,
+    "model": "Test(\n  (attention): GATConv(360, 8, heads=32)\n  (conv1): TestConv3(\n    (linear_same): Linear(in_features=256, out_features=128, bias=True)\n    (linear_diff): Linear(in_features=256, out_features=128, bias=True)\n    (bilinear_pool): Bilinear(in1_features=128, in2_features=128, out_features=128, bias=True)\n  )\n  (lin): Linear(in_features=128, out_features=1, bias=True)\n  (lin_edge): Linear(in_features=256, out_features=1, bias=True)\n)",
+    "epochs": 1500,
+    "run_time": "26462.563",
+    "fold1": "Accuracy: 0.86445, Precision: 0.85670, Recall: 0.87532, F1: 0.86591, ROCAUC: 0.93452, PRAUC: 0.92660",
+    "fold2": "Accuracy: 0.88587, Precision: 0.87554, Recall: 0.89962, F1: 0.88742, ROCAUC: 0.94806, PRAUC: 0.94429",
+    "fold3": "Accuracy: 0.87660, Precision: 0.86538, Recall: 0.89194, F1: 0.87846, ROCAUC: 0.94336, PRAUC: 0.93532",
+    "fold4": "Accuracy: 0.86988, Precision: 0.84661, Recall: 0.90345, F1: 0.87411, ROCAUC: 0.94398, PRAUC: 0.94303",
+    "fold5": "Accuracy: 0.86253, Precision: 0.84281, Recall: 0.89130, F1: 0.86638, ROCAUC: 0.93631, PRAUC: 0.93198",
+    "_avg_": "Accuracy: 0.87187, Precision: 0.85741, Recall: 0.89233, F1: 0.87446, ROCAUC: 0.94125, PRAUC: 0.93624",
+    "random_state": 41,
+    "k": 3
+}
