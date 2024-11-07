@@ -5,7 +5,7 @@
 
 The flow chart of PMDGGM is as follows:
 
-![示例图片](https://gitee.com/Muchenxixi/my-mark-down_-tuchuang/raw/master/img/202411062350934.png)
+![示例图片](./PMDGGM.png)
 
 ## Directory Structure
 
