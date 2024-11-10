@@ -1,41 +1,46 @@
-import json
-import os
-import shutil
+# -*- coding:utf-8 -*-
+# 作者: 王业强__
+# 日期: 2024-08-15
+# 声明: Welcome my coding environments!
+
 import time
-from torch.nn import DataParallel
-import pandas as pd
-import torch
+import json
+import shutil
+from tqdm import tqdm
 from numpy import interp
 from sklearn.manifold import TSNE
-from sklearn.model_selection import StratifiedKFold
+from torch_geometric.data import Data
+from sklearn.decomposition import PCA
 from torch.optim.lr_scheduler import StepLR
-from t_model import *
-from t_function import *
-from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc, \
-    precision_recall_curve, average_precision_score
-import warnings
+from sklearn.metrics import precision_recall_curve
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
 
+from model import *
+from utils import *
+import warnings
 warnings.filterwarnings('ignore')
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f'Using device: {device}')
 
 # 数据预处理
 features, edge_index, _, all_samples, labels = load_data()
 features = features.to(device)
 edge_index = edge_index.to(device)
+
 # 构建图数据对象
 data = Data(x=features, edge_index=edge_index, y=labels)
 
-# 将Tensor转换为numpy数组，以便于使用sklearn的StratifiedKFold
+# 将Tensor转换为numpy数组
 samples_numpy = all_samples.numpy()
 labels_numpy = labels.numpy()
 
 all_samples = all_samples.to(device)
 labels = labels.to(device)
 
-
+# 训练函数
 def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_path):
     start_time = time.time()
     print("feature_size: ", data.x.shape)
@@ -43,16 +48,19 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
     learning_rate = learning_rate
 
     random_state = 41
+
+    # 五折交叉验证
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
 
-    # 保存当前运行的python文件
+    # 保存当前运行的 python文件和用到的 python文件
     current_file_path = os.path.abspath(__file__)
     current_file_name = os.path.basename(current_file_path)
     target_file_path = save_path + current_file_name
-    model_path = "t_model.py"
+    model_path = "model.py"
     target_model_path = save_path + model_path
-    function_path = "t_function.py"
+    function_path = "utils.py"
     target_function_path = save_path + function_path
+
     # 复制当前运行的文件到目标目录
     shutil.copy2(current_file_path, target_file_path)
     shutil.copy2(model_path, target_model_path)
@@ -73,13 +81,14 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
         'mean_tpr': [],
         'tprs_': [],
         'std_tpr': [],
-        'pr_precisions': [],  # Add precision for PR curve
-        'pr_recalls': [],  # Add recall for PR curve
+        'pr_precisions': [],
+        'pr_recalls': [],
         'pr_aucs': []
     }
 
     result = []
     for fold, (train_idx, val_idx) in enumerate(skf.split(samples_numpy, labels_numpy)):
+
         # 每一折重新初始化模型
         model = myModel(num_features=features.shape[1]).to(device)  # 创建新的模型实例
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
@@ -97,13 +106,13 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
         train_edge_index = train_samples[labels[train_idx] == 1].T
         val_edge_index = val_samples[labels[val_idx] == 1].T
 
-        if (fold == 0):
-            print("\nBefore add M/D edge_index:")
-            print("train_edge_index.shape:", train_edge_index.shape)
-            print("val_edge_index.shape:", val_edge_index.shape)
+        # if (fold == 0):
+        #     print("\nBefore add M/D edge_index:")
+        #     print("train_edge_index.shape:", train_edge_index.shape)
+        #     print("val_edge_index.shape:", val_edge_index.shape)
 
         # 根据 train_edge_index 重新算 M、D 的边并加入边集
-        M, D = get_MD_new(train_edge_index.cpu())
+        M, D = get_MD(train_edge_index.cpu())
         M_edge_index = torch.nonzero(M, as_tuple=False).t().contiguous()
         D_edge_index = torch.nonzero(D, as_tuple=False).t().contiguous()
         D_edge_index += torch.tensor(812)
@@ -113,16 +122,16 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
         train_edge_index = torch.cat([M_edge_index, D_edge_index, train_edge_index.cpu()], dim=1)
         train_edge_index = torch.tensor(train_edge_index, dtype=torch.long).to(device)
 
-        if (fold == 0):
-            print("\ntrain_samples.shape:", train_samples.shape)
-            print("val_samples.shape:", val_samples.shape)
-            print("\nAfter add M/D edge_index:")
-            print("M_edge_index.shape_train: ", M_edge_index.shape)
-            print("D_edge_index.shape_train: ", D_edge_index.shape)
-            print("train_edge_index.shape:", train_edge_index.shape)
+        # if (fold == 0):
+        #     print("\ntrain_samples.shape:", train_samples.shape)
+        #     print("val_samples.shape:", val_samples.shape)
+        #     print("\nAfter add M/D edge_index:")
+        #     print("M_edge_index.shape_train: ", M_edge_index.shape)
+        #     print("D_edge_index.shape_train: ", D_edge_index.shape)
+        #     print("train_edge_index.shape:", train_edge_index.shape)
 
-        # 验证集不带权重的边
-        M, D = get_MD_new(val_edge_index.cpu())
+        # 验证集
+        M, D = get_MD(val_edge_index.cpu())
         M_edge_index = torch.nonzero(M, as_tuple=False).t().contiguous()
         D_edge_index = torch.nonzero(D, as_tuple=False).t().contiguous()
         D_edge_index += torch.tensor(812)
@@ -132,18 +141,18 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
         val_edge_index = torch.cat([M_edge_index, D_edge_index, val_edge_index.cpu()], dim=1)
         val_edge_index = torch.tensor(val_edge_index, dtype=torch.long).to(device)
 
-        if (fold == 0):
-            print("M_edge_index.shape_val: ", M_edge_index.shape)
-            print("D_edge_index.shape_val: ", D_edge_index.shape)
-            print("val_edge_index.shape:", val_edge_index.shape)
-
-            # df = pd.DataFrame(train_edge_index.cpu().T)
-            # df.to_csv('datasets/train_edge_index_all.csv',index = False)
+        # if (fold == 0):
+        #     print("M_edge_index.shape_val: ", M_edge_index.shape)
+        #     print("D_edge_index.shape_val: ", D_edge_index.shape)
+        #     print("val_edge_index.shape:", val_edge_index.shape)
+        #
+        #     # df = pd.DataFrame(train_edge_index.cpu().T)
+        #     # df.to_csv('Datasets/train_edge_index_all.csv',index = False)
 
         epoch_losses = []  # 存储当前折的损失
         epoch_accuracies = []  # 存储当前折的acc
 
-        for epoch in tqdm(range(epochs), desc=f'fold_{fold + 1}', total=epochs, ncols=50):  # 有进度条
+        for epoch in tqdm(range(epochs), desc=f'fold_{fold + 1}', total=epochs, ncols=50):
 
             model.train()
             optimizer.zero_grad()
@@ -151,45 +160,37 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
                 data.x, train_edge_index.to(device), train_samples)
             out = out.squeeze()
             train_out = out_edge_logits.squeeze().cpu()
-            # attention_weights = model.attention.weight.data  # 获取权重
-            loss = criterion(train_out, train_labels.cpu())  # cpu和cpu比较，不能经过sigmod函数
+
+            loss = criterion(train_out, train_labels.cpu())
             loss.backward()
             optimizer.step()
-            # 学习率衰减
             scheduler.step()
 
             train_preds = (torch.sigmoid(train_out) > 0.5).float()
 
             train_accuracy = accuracy_score(train_labels.cpu().numpy(), train_preds.detach().numpy())
-            # train_accuracy = (train_preds == train_labels.cpu()).float().mean()  # cpu和cpu比较
             epoch_losses.append(loss.item())
             epoch_accuracies.append(train_accuracy)
 
-            # 对训练的最后一轮模型的输出的嵌入特征 embeddings进行可视化
+            # 绘制最后一轮分类效果的embedding
             if (epoch == epochs - 1):
-
                 positive_num = int(torch.sum(train_labels).item())
-                # print("edge_embedding.shape: ", edge_embedding.shape)
-                # print("positive_num: ", positive_num)
                 pca = PCA(n_components=2)
-                # 转换为numpy数组，然后使用PCA进行降维
                 pca_result = pca.fit_transform(edge_embedding.cpu().detach().numpy())
 
                 # 使用t-SNE进行进一步降维
                 tsne = TSNE(n_components=2)
                 tsne_result = tsne.fit_transform(pca_result)
 
-                # 可视化t-SNE结果
                 # 为miRNA和疾病节点指定两种不同的颜色
                 plt.figure(figsize=(10, 8))
-                plt.scatter(tsne_result[:positive_num, 0], tsne_result[:positive_num, 1], color='red', label='positive')
-                plt.scatter(tsne_result[positive_num:, 0], tsne_result[positive_num:, 1], color='blue',
-                            label='negative')
+                plt.scatter(tsne_result[:positive_num, 0], tsne_result[:positive_num, 1], color='red', label='miRNA')
+                plt.scatter(tsne_result[positive_num:, 0], tsne_result[positive_num:, 1], color='blue',label='disease')
 
-                plt.title('t-SNE edge_embedding of the GCN model')
+                plt.title('t-SNE edge_embedding of the PMDGGM model')
                 plt.xlabel('Principal Component 1')
                 plt.ylabel('Principal Component 2')
-                plt.legend()  # 添加图例
+                plt.legend()
                 # 保存图像
                 if (fold == 0):
                     plt.savefig(save_img_path + 'embedding.png')
@@ -205,11 +206,11 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
 
             val_preds = (torch.sigmoid(val_out) > 0.5).float()
 
-            val_labels = val_labels.cpu()  # 标签移动到cpu上
+            val_labels = val_labels.cpu()
 
-            # roc_curve
-            roc_auc = roc_auc_score(val_labels.numpy(), val_out.numpy())  # 这里不能用sigmoid之后的结果
-            fpr, tpr, thresholds = roc_curve(val_labels.numpy(), val_out.numpy())  # 这里不能用sigmoid之后的结果
+            # ROC
+            roc_auc = roc_auc_score(val_labels.numpy(), val_out.numpy())
+            fpr, tpr, thresholds = roc_curve(val_labels.numpy(), val_out.numpy())
             tprs.append(interp(mean_fpr, fpr, tpr))
             tprs[-1][0] = 0.0
 
@@ -265,6 +266,7 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
     timestr = "%.3f" % execution_time
     print("运行时间: " + timestr + " s")
 
+    # 计算五折的平均值
     avg_accuracy = np.mean(
         [float(result[0].split(',')[0].split(': ')[1]), float(result[1].split(',')[0].split(': ')[1]),
          float(result[2].split(',')[0].split(': ')[1]), float(result[3].split(',')[0].split(': ')[1]),
@@ -317,14 +319,14 @@ def train(myModel, epochs, learning_rate, save_path, save_img_path, save_csv_pat
 
 
 if __name__ == '__main__':
-    epochs = 1500
+    epochs = 1
     learning_rate = 1e-4
 
-    # save result config
+    # 日志文件
     t = time.localtime()
     time_index = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     save_path = './Result/' + time_index + '/'
-    print('\n' + save_path)
+    print('\nSave to: ' + save_path)
 
     # 创建保存的目录(日期)
     os.mkdir(save_path)
@@ -336,5 +338,5 @@ if __name__ == '__main__':
     save_csv_path = save_img_path + 'csv' + '/'  # plot/csv
     save_img_path = save_img_path + 'imgs' + '/'  # plot/imgs
 
-    train(myModel=Test, epochs=epochs, learning_rate=learning_rate,
+    train(myModel=PMDGGM, epochs=epochs, learning_rate=learning_rate,
           save_path=save_path, save_img_path=save_img_path, save_csv_path=save_csv_path)
