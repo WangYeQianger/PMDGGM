@@ -1,6 +1,6 @@
 {
     "learning_rate": 0.0001,
-    "model": "Test(\n  (attention): GATConv(360, 8, heads=32)\n  (conv1): TestConv3(\n    (linear_same): Linear(in_features=256, out_features=128, bias=True)\n    (linear_diff): Linear(in_features=256, out_features=128, bias=True)\n    (bilinear_pool): Bilinear(in1_features=128, in2_features=128, out_features=128, bias=True)\n  )\n  (lin): Linear(in_features=128, out_features=1, bias=True)\n  (lin_edge): Linear(in_features=256, out_features=1, bias=True)\n)",
+    "model": "PMDGGM(\n  (attention): GATConv(360, 8, heads=32)\n  (conv1): GatedGraphConv(\n    (linear_same): Linear(in_features=256, out_features=128, bias=True)\n    (linear_diff): Linear(in_features=256, out_features=128, bias=True)\n    (bilinear_pool): Bilinear(in1_features=128, in2_features=128, out_features=128, bias=True)\n  )\n  (lin): Linear(in_features=128, out_features=1, bias=True)\n  (lin_edge): Linear(in_features=256, out_features=1, bias=True)\n)",
     "epochs": 1500,
     "run_time": "26462.563",
     "fold1": "Accuracy: 0.86445, Precision: 0.85670, Recall: 0.87532, F1: 0.86591, ROCAUC: 0.93452, PRAUC: 0.92660",
