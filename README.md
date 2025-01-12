@@ -78,4 +78,5 @@ If you use our tool and code, please cite our article and mark the project to sh
 
 Citation format: Yeqiang Wang，Sharen Yun，Yuchen Zhang，Xiujuan Lei，Prediction of miRNA-Disease Associations Based on Hybrid Gated GNN and Multi-Data Integration，International Conference on Bioinformatics and Biomedicine (BIBM)，Lisbon, Portugal, December 3-6, 2024.
 
-Paper Link: [click here](https://your_article_link)
+Paper Link: [click here](Prediction of miRNA-Disease Associations Based on Hybrid Gated GNN and Multi-Data Integration.pdf)
+
